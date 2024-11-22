@@ -1,9 +1,14 @@
 import subprocess
+import shutil
 
 def detect_waf(url):
     """
     Detect the WAF protecting the target URL using wafw00f.
     """
+    if not shutil.which("wafw00f"):
+        print("[!] wafw00f is not installed. Install it using: pip install wafw00f")
+        return None
+
     try:
         print("[*] Detecting WAF...")
         result = subprocess.run(
@@ -22,6 +27,6 @@ def detect_waf(url):
                     return waf_name
         else:
             print("[!] WAF detection failed.")
-    except FileNotFoundError:
-        print("[!] wafw00f is not installed. Install it using: pip install wafw00f")
+    except Exception as e:
+        print(f"[!] WAF detection error: {e}")
     return None
