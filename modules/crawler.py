@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, parse_qs
 
 def crawl(base_url, max_depth=2):
     """
@@ -32,21 +32,21 @@ def crawl(base_url, max_depth=2):
                 form_details = {
                     "action": urljoin(base_url, form.get("action", "")),
                     "method": form.get("method", "GET").upper(),
-                    "inputs": []
+                    "params": {}
                 }
                 for input_tag in form.find_all("input"):
-                    form_details["inputs"].append({
-                        "name": input_tag.get("name"),
-                        "type": input_tag.get("type", "text")
-                    })
+                    input_name = input_tag.get("name")
+                    if input_name:
+                        form_details["params"][input_name] = ""  # Initialize with empty value
                 forms.append(form_details)
 
             # Save the crawled page data
             crawled_data.append({
                 "url": url,
-                "forms": forms
+                "forms": forms,
+                "params": parse_qs(urlparse(url).query)  # Extract query params from URL
             })
-        except Exception as e:
+        except requests.RequestException as e:
             print(f"[!] Failed to crawl {url}: {e}")
 
         max_depth -= 1
