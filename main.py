@@ -6,21 +6,81 @@ from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
 
+def print_banner():
+    """
+    Prints the ASCII art banner and author information.
+    """
+    banner = r"""
+
+     ▄█ ▀████    ▐████▀ ▄██   ▄   ▀████    ▐████▀    ▄████████    ▄████████ 
+    ███   ███▌   ████▀  ███   ██▄   ███▌   ████▀    ███    ███   ███    ███ 
+    ███    ███  ▐███    ███▄▄▄███    ███  ▐███      ███    █▀    ███    █▀  
+    ███    ▀███▄███▀    ▀▀▀▀▀▀███    ▀███▄███▀      ███          ███        
+    ███    ████▀██▄     ▄██   ███    ████▀██▄     ▀███████████ ▀███████████ 
+    ███   ▐███  ▀███    ███   ███   ▐███  ▀███             ███          ███ 
+    ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███ 
+█▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀  
+▀▀▀▀▀▀                                                                      
+
+    """
+    author = "\n                # Author: JxyCyberSec\n"
+    print(f"\033[94m{banner}\033[0m")  # Blue banner
+    print(f"\033[93m{author}\033[0m")  # Yellow author info
+
 def get_arguments():
     """
     Parse command-line arguments.
     """
-    parser = argparse.ArgumentParser(description="JXY-XSS - Automated XSS Vulnerability Scanner")
-    parser.add_argument("-u", "--url", required=True, help="Target URL to scan")
-    parser.add_argument("-o", "--output", required=False, help="Path to save the scan results")
+    parser = argparse.ArgumentParser(
+        description="JXY-XSS - Automated XSS Vulnerability Scanner",
+        epilog="Example usage: python main.py -u https://target.com -o results.json"
+    )
+    parser.add_argument("-u", "--url", help="Target URL to scan")
+    parser.add_argument("-o", "--output", help="Path to save the scan results")
+    parser.add_argument("-up", "--update", action="store_true", help="Update the tool to the latest version from GitHub")
     return parser.parse_args()
 
-def main():
-    # Setup logger
+def update_tool():
+    """
+    Updates the tool by pulling the latest changes from GitHub.
+    """
     logger = setup_logger()
+    logger.info("Checking for updates...")
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if "Already up to date." in result.stdout:
+            logger.info("The tool is already up to date.")
+        else:
+            logger.info("Tool successfully updated to the latest version.")
+            logger.info(result.stdout)
+    except FileNotFoundError:
+        logger.error("Git is not installed. Please install Git to use the update feature.")
+    except Exception as e:
+        logger.error(f"An error occurred while updating: {e}")
+
+def main():
+    # Print the banner
+    print_banner()
 
     # Parse arguments
     args = get_arguments()
+    logger = setup_logger()
+
+    # Handle update functionality
+    if args.update:
+        update_tool()
+        return
+
+    # Ensure the URL argument is provided if not updating
+    if not args.url:
+        logger.error("Please provide a target URL with -u or --url")
+        return
+
     url = args.url
     output_file = args.output
     logger.info(f"Starting scan for: {url}")
@@ -49,13 +109,13 @@ def main():
                 injected_results = inject_payload(endpoint['url'], endpoint['params'], payload)
                 for param, payload, response_text in injected_results:
                     if payload in response_text:
-                        vulnerable_url = f"{endpoint['url']}?{param}={payload}"
-                        logger.info(f"[+] Vulnerable URL: {vulnerable_url}")
+                        vulnerable_url = f"{endpoint['url'].split('?')[0]}?{param}={payload}"
+                        logger.info(f"\033[92m[+] Vulnerable URL: {vulnerable_url}\033[0m")
                         results.append({"url": endpoint['url'], "param": param, "payload": payload, "vulnerable_url": vulnerable_url})
 
         # Test forms
         for form in endpoint.get("forms", []):
-            logger.info(f"Testing form action: {form['action']}")
+            logger.info(f"\033[93mTesting form action: {form['action']}\033[0m")
             if form["params"]:
                 logger.info(f"Testing form parameters: {list(form['params'].keys())}")
                 for payload in payloads:
@@ -63,7 +123,7 @@ def main():
                     for param, payload, response_text in injected_results:
                         if payload in response_text:
                             vulnerable_url = f"{form['action']}?{param}={payload}"
-                            logger.info(f"[+] Vulnerable URL: {vulnerable_url}")
+                            logger.info(f"\033[92m[+] Vulnerable URL: {vulnerable_url}\033[0m")
                             results.append({"url": form['action'], "param": param, "payload": payload, "vulnerable_url": vulnerable_url})
 
     # Save results to file if specified
