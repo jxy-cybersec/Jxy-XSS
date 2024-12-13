@@ -51,6 +51,9 @@ def update_tool():
     logger = setup_logger()
     logger.info("Checking for updates...")
     try:
+        # Debugging: Check if subprocess is loaded
+        logger.info(f"Subprocess module: {subprocess}")
+        
         # Run git pull using subprocess
         result = subprocess.run(
             ["git", "pull"],
@@ -67,6 +70,7 @@ def update_tool():
         logger.error("Git is not installed. Please install Git to use the update feature.")
     except Exception as e:
         logger.error(f"An error occurred while updating: {e}")
+
 
 
 def main():
