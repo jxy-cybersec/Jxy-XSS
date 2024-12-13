@@ -1,5 +1,5 @@
 import argparse
-import subprocess  # Import subprocess for update functionality
+import subprocess  # Ensure subprocess is properly imported
 from modules.utils import setup_logger, save_results
 from modules.payloads import load_payloads_for_waf
 from modules.target_analysis import crawl
@@ -51,6 +51,7 @@ def update_tool():
     logger = setup_logger()
     logger.info("Checking for updates...")
     try:
+        # Run git pull using subprocess
         result = subprocess.run(
             ["git", "pull"],
             stdout=subprocess.PIPE,
