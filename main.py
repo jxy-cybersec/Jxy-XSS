@@ -1,21 +1,11 @@
 import argparse
-
-try:
-    import subprocess  # Ensure subprocess is imported
-    print(f"Subprocess module loaded from: {subprocess.__file__}")
-except ImportError as e:
-    print(f"Error importing subprocess: {e}")
-    raise
-
+import subprocess  # Ensure subprocess is properly imported
 from modules.utils import setup_logger, save_results
 from modules.payloads import load_payloads_for_waf
 from modules.target_analysis import crawl
 from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
-
-# Existing functions like print_banner(), get_arguments(), update_tool(), main(), etc.
-
 
 
 def print_banner():
