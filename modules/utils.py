@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import requests
 
 def setup_logger(log_file="tool.log", log_level=logging.INFO):
@@ -41,3 +42,20 @@ def save_results(output_file, results):
         print(f"[+] Results saved to: {output_file}")
     except Exception as e:
         print(f"[-] Error saving results to {output_file}: {e}")
+
+def escaped(position, string):
+    """
+    Determines whether a character at a given position in a string is escaped.
+
+    Args:
+        position (int): The position of the character in the string.
+        string (str): The string to check.
+
+    Returns:
+        bool: True if the character is escaped, False otherwise.
+    """
+    usable = string[:position][::-1]  # Reverse the string up to the position
+    match = re.match(r'\\+', usable)  # Match backslashes
+    if match:
+        return len(match.group()) % 2 != 0  # Odd number of backslashes means escaped
+    return False
