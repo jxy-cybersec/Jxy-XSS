@@ -9,6 +9,7 @@ from modules.waf_detection import detect_waf
 from modules.crawler import crawl
 from modules.payloads import generate_payloads
 from modules.htmlParser import htmlParser
+from modules.utils import setup_logger, save_results
 
 
 def print_banner():
