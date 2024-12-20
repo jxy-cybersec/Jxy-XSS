@@ -9,12 +9,11 @@ JXY-XSS is a Python-based tool designed to detect and exploit Cross-Site Scripti
 ---
 
 ## Features
-- **Target Analysis**: Crawls the target website and identifies parameters and input fields for injection.
-- **Payload Management**: Automatically selects appropriate payloads based on the detected WAF or defaults to general-purpose payloads.
-- **Request Injection**: Injects payloads into query parameters and forms using GET/POST requests.
-- **Accurate Response Analysis**: Monitors application responses to detect actual XSS execution, minimizing false positives.
-- **WAF Detection**: Identifies the Web Application Firewall (WAF) protecting the target and adapts payloads accordingly.
-- **Form and URL Query Parameter Scanning**: Scans both URL parameters and HTML forms for vulnerabilities.
+- DOM-Based XSS Detection
+- WAF Detection and Adaptive Payloads
+- Form and URL Parameter Scanning
+- Context-Aware Payload Injection
+- Accurate Reflection Validation to Reduce False Positives
 
 ---
 

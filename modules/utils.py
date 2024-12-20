@@ -1,44 +1,14 @@
-import logging
+import requests
 import json
+import random
+import re
 
-class CustomFormatter(logging.Formatter):
+def requester(url, params=None, headers=None, method="GET"):
     """
-    Custom logging formatter to add colors based on log level.
+    Sends an HTTP request to the target URL.
     """
-    green = "\033[92m"
-    yellow = "\033[93m"
-    reset = "\033[0m"
-    format = "[%(asctime)s] [JXY-XSS] [%(levelname)s]: %(message)s"
-
-    FORMATS = {
-        logging.INFO: green + format + reset,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: "\033[91m" + format + reset
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno, self.format)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-def setup_logger():
-    """
-    Sets up the logger for JXY-XSS.
-    """
-    logger = logging.getLogger("JXY-XSS")
-    handler = logging.StreamHandler()
-    handler.setFormatter(CustomFormatter())
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    return logger
-
-def save_results(file_path, results):
-    """
-    Saves the scan results to a file in JSON format.
-    """
-    try:
-        with open(file_path, "w", encoding="utf-8") as file:
-            json.dump(results, file, indent=4)
-        print(f"[+] Results saved to {file_path}")
-    except IOError as e:
-        print(f"[!] Failed to save results: {e}")
+    if method.upper() == "GET":
+        response = requests.get(url, params=params, headers=headers)
+    else:
+        response = requests.post(url, data=params, headers=headers)
+    return response

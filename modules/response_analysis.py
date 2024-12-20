@@ -1,20 +1,24 @@
-import re
+from fuzzywuzzy import fuzz
+from modules.dom import dom_check
+from modules.colors import green, red, end
 
-def analyze_response(injected_results):
+def analyze_response(response, payload):
     """
-    Analyze responses for signs of successful injection.
+    Validates if the payload is reflected in the response.
     """
-    validated_results = []
-    print("[*] Validating responses to ensure actual XSS execution...")
-    for param, payload, response_text in injected_results:
-        # Check if payload is reflected in the response text
-        if payload in response_text:
-            # Additional verification for HTML context
-            if "<script>" in response_text or re.search(r"<.*on\w+=.*>", response_text):
-                print(f"[+] Verified XSS: Parameter '{param}' with payload: {payload}")
-                validated_results.append((param, payload))
-            else:
-                print(f"[-] False positive ignored for: {param} with payload: {payload}")
-        else:
-            print(f"[-] Payload not reflected for: {param} with payload: {payload}")
-    return validated_results
+    reflections = response.text.lower().count(payload.lower())
+    if reflections > 0:
+        print(f"{green}[+] Reflection detected: {payload}{end}")
+        return True
+    return False
+
+def analyze_dom(response):
+    """
+    Analyzes DOM for vulnerabilities using source-sink relationships.
+    """
+    vulnerabilities = dom_check(response)
+    if vulnerabilities:
+        print(f"{red}[!] DOM vulnerabilities detected!{end}")
+        for vulnerability in vulnerabilities:
+            print(vulnerability)
+    return vulnerabilities

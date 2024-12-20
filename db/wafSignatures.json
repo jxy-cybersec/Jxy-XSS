@@ -1,0 +1,32 @@
+{
+    "Cloudflare": {
+        "page": "cloudflare",
+        "code": "403",
+        "headers": "cf-ray"
+    },
+    "Akamai": {
+        "page": "akamai",
+        "code": "403",
+        "headers": "akamai-"
+    },
+    "AWS WAF": {
+        "page": "blocked",
+        "code": "403",
+        "headers": "aws-waf"
+    },
+    "Imperva SecureSphere": {
+        "page": "imperva",
+        "code": "403",
+        "headers": "x-iinfo"
+    },
+    "F5 BIG-IP ASM": {
+        "page": "f5 big-ip",
+        "code": "403",
+        "headers": "x-waf"
+    },
+    "ModSecurity": {
+        "page": "mod_security",
+        "code": "406",
+        "headers": "mod_security"
+    }
+}

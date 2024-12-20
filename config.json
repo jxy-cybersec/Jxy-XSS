@@ -1,4 +1,13 @@
 {
-    "target_url": "http://example.com",
-    "crawl_depth": 2
+    "minEfficiency": 85,
+    "defaultEditor": "nano",
+    "blindPayload": "",
+    "xsschecker": "xsscheck",
+    "delay": 1,
+    "threadCount": 10,
+    "timeout": 10,
+    "proxies": {
+        "http": "http://0.0.0.0:8080",
+        "https": "http://0.0.0.0:8080"
+    }
 }
