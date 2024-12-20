@@ -107,9 +107,9 @@ def main():
             payloads = generate_payloads(context, details)
             results.extend(test_payloads(endpoint, payloads))
 
-    if output_file:
-        save_results(output_file, results)
-        logger.info(f"Results saved to: {output_file}")
+    if args.output:
+        save_results(args.output, results)
+        logger.info(f"Results saved to: {args.output}")
 
     logger.info("Scan complete.")
 
