@@ -1,14 +1,29 @@
-import requests
+import logging
 import json
-import random
-import re
+import requests
+from urllib.parse import urlparse
 
-def requester(url, params=None, headers=None, method="GET"):
+def setup_logger(log_file="tool.log", log_level=logging.INFO):
     """
-    Sends an HTTP request to the target URL.
+    Sets up a logger to write to both the console and a log file.
     """
-    if method.upper() == "GET":
-        response = requests.get(url, params=params, headers=headers)
-    else:
-        response = requests.post(url, data=params, headers=headers)
-    return response
+    logger = logging.getLogger("JXY-XSS")
+    logger.setLevel(log_level)
+
+    # Formatter for log messages
+    formatter = logging.Formatter(
+        "%(asctime)s [%(name)s] [%(levelname)s]: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return logger
