@@ -1,13 +1,13 @@
 import argparse
 import subprocess
-from modules.utils import setup_logger, save_results, requester
-from modules.payloads import load_payloads_for_waf, generate_payloads
+from modules.utils import setup_logger, save_results
+from modules.payloads import load_payloads_for_waf
 from modules.target_analysis import analyze_target
 from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
 from modules.crawler import crawl
-from modules.htmlParser import htmlParser
+from modules.payloads import generate_payloads
 
 
 def print_banner():
@@ -38,8 +38,7 @@ def get_arguments():
     return parser.parse_args()
 
 
-def update_tool():
-    logger = setup_logger()
+def update_tool(logger):
     logger.info("Checking for updates...")
     try:
         result = subprocess.run(
@@ -58,7 +57,7 @@ def update_tool():
         logger.error(f"An error occurred while updating: {e}")
 
 
-def test_payloads(endpoint, payloads):
+def test_payloads(endpoint, payloads, logger):
     """
     Tests payloads against a specific endpoint.
 
@@ -70,11 +69,10 @@ def test_payloads(endpoint, payloads):
         list: List of successful injection results.
     """
     results = []
-    params = endpoint.get('inputs', {})
-    logger = setup_logger()
+    params = endpoint.get('params', {})  # Ensure params is always a dictionary
 
-    if not params:
-        logger.error("[-] No parameters found to test.")
+    if not isinstance(params, dict):
+        logger.error("[-] Invalid parameters format. Expected dict.")
         return []
 
     for payload in payloads:
@@ -85,14 +83,13 @@ def test_payloads(endpoint, payloads):
     return results
 
 
-
 def main():
     print_banner()
+    logger = setup_logger()  # Initialize logger
     args = get_arguments()
-    logger = setup_logger()
 
     if args.update:
-        update_tool()
+        update_tool(logger)
         return
 
     if not args.url:
@@ -111,20 +108,21 @@ def main():
 
     payloads = load_payloads_for_waf(waf_name, base_path="payloads/")
     crawled_data = crawl(url)
-    results = []
+    logger.info(f"[+] Found {len(crawled_data)} endpoints during crawling.")
+    for endpoint in crawled_data:
+        logger.debug(f"Endpoint structure: {endpoint}")
 
+    results = []
     for endpoint in crawled_data:
         logger.info(f"Testing endpoint: {endpoint['url']}")
-        response = requester(endpoint['url'])
-        if response:
-            html_contexts = htmlParser(response.text)
-            for context, details in html_contexts.items():
-                payloads = generate_payloads(context, details)
-                results.extend(test_payloads(endpoint, payloads))
+        html_contexts = analyze_target(endpoint.get('response', ''))
+        for context, details in html_contexts.items():
+            payloads = generate_payloads(context, details)
+            results.extend(test_payloads(endpoint, payloads, logger))
 
-    if args.output:
-        save_results(args.output, results)
-        logger.info(f"Results saved to: {args.output}")
+    if output_file:
+        save_results(output_file, results)
+        logger.info(f"Results saved to: {output_file}")
 
     logger.info("Scan complete.")
 
