@@ -2,8 +2,13 @@ import json
 import logging
 import re
 import requests
-from urllib.parse import urljoin, urlparse
 
+# Default headers for HTTP requests
+default_headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+}
 
 def setup_logger(log_file="tool.log", log_level=logging.INFO):
     """
@@ -17,17 +22,15 @@ def setup_logger(log_file="tool.log", log_level=logging.INFO):
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    if not logger.handlers:
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
     return logger
-
 
 def save_results(output_file, results):
     """
@@ -36,6 +39,9 @@ def save_results(output_file, results):
     Args:
         output_file (str): Path to the output file.
         results (list): List of dictionaries containing scan results.
+
+    Returns:
+        None
     """
     try:
         with open(output_file, "w") as file:
@@ -44,79 +50,19 @@ def save_results(output_file, results):
     except Exception as e:
         print(f"[-] Error saving results to {output_file}: {e}")
 
-
-def handle_anchor(base_url, relative_url):
-    """
-    Resolves relative or partial URLs into absolute URLs.
-
-    Args:
-        base_url (str): The base URL (e.g., the page being crawled).
-        relative_url (str): The relative or incomplete URL.
-
-    Returns:
-        str: The resolved absolute URL.
-    """
-    if not relative_url:
-        return base_url
-    return urljoin(base_url, relative_url)
-
-
-def requester(url, params=None, headers=None, method="GET", data=None, timeout=10):
-    """
-    Makes an HTTP request to the given URL.
-
-    Args:
-        url (str): The target URL.
-        params (dict, optional): Query or form parameters.
-        headers (dict, optional): HTTP headers.
-        method (str): HTTP method (GET or POST).
-        data (dict, optional): POST data.
-        timeout (int): Timeout for the request.
-
-    Returns:
-        obj: Response object.
-    """
-    try:
-        if method.upper() == "POST":
-            return requests.post(url, data=data, headers=headers, timeout=timeout)
-        return requests.get(url, params=params, headers=headers, timeout=timeout)
-    except Exception as e:
-        print(f"[-] Error making request to {url}: {e}")
-        return None
-
-
-def replaceValue(mapping, key, new_value, strategy=None):
-    """
-    Replace a specific key's value in a dictionary.
-
-    Args:
-        mapping (dict): The dictionary to modify.
-        key (str): Key whose value should be replaced.
-        new_value (str): The new value.
-        strategy (function, optional): Function for copying (e.g., `copy.deepcopy`).
-
-    Returns:
-        dict: Updated dictionary.
-    """
-    another_map = strategy(mapping) if strategy else mapping
-    if key in another_map:
-        another_map[key] = new_value
-    return another_map
-
-
 def escaped(position, string):
     """
-    Determines if a character at a position is escaped.
+    Determines whether a character at a given position in a string is escaped.
 
     Args:
-        position (int): Position of the character.
+        position (int): The position of the character in the string.
         string (str): The string to check.
 
     Returns:
-        bool: True if escaped, False otherwise.
+        bool: True if the character is escaped, False otherwise.
     """
-    usable = string[:position][::-1]
-    match = re.match(r'\\+', usable)
+    usable = string[:position][::-1]  # Reverse the string up to the position
+    match = re.match(r'\\+', usable)  # Match backslashes
     if match:
-        return len(match.group()) % 2 != 0
+        return len(match.group()) % 2 != 0  # Odd number of backslashes means escaped
     return False
