@@ -59,15 +59,31 @@ def update_tool():
 
 
 def test_payloads(endpoint, payloads):
+    """
+    Tests payloads against a specific endpoint.
+
+    Args:
+        endpoint (dict): Endpoint to test, including URL and parameters.
+        payloads (list): List of payloads to inject.
+
+    Returns:
+        list: List of successful injection results.
+    """
     results = []
+    params = endpoint.get('inputs', {})
+    logger = setup_logger()
+
+    if not params:
+        logger.error("[-] No parameters found to test.")
+        return []
+
     for payload in payloads:
-        response = inject_payload(endpoint['url'], endpoint['inputs'], payload)
-        if analyze_response(response, payload):
-            results.append({
-                "url": endpoint['url'],
-                "payload": payload
-            })
+        logger.info(f"[*] Testing payload: {payload}")
+        injected_results = inject_payload(endpoint['url'], params, payload)
+        results.extend(injected_results)
+
     return results
+
 
 
 def main():
