@@ -66,3 +66,46 @@ def escaped(position, string):
     if match:
         return len(match.group()) % 2 != 0  # Odd number of backslashes means escaped
     return False
+
+def replaceValue(mapping, target_key, new_value, strategy=None):
+    """
+    Replaces the value of a specific key in a mapping (dictionary) with a new value.
+
+    Args:
+        mapping (dict): The dictionary to modify.
+        target_key (str): The key whose value is to be replaced.
+        new_value (str): The new value to assign to the key.
+        strategy (callable, optional): A callable for copying the dictionary, if needed.
+
+    Returns:
+        dict: A dictionary with the updated key-value pair.
+    """
+    another_map = strategy(mapping) if strategy else mapping
+    if target_key in another_map:
+        another_map[target_key] = new_value
+    return another_map
+
+def requester(url, params=None, headers=None, method="GET", timeout=10):
+    """
+    Sends an HTTP request to the given URL with the specified parameters.
+
+    Args:
+        url (str): The target URL.
+        params (dict): The request parameters.
+        headers (dict): The request headers.
+        method (str): The HTTP method ("GET" or "POST").
+        timeout (int): The timeout for the request.
+
+    Returns:
+        requests.Response: The HTTP response object.
+    """
+    headers = headers or default_headers
+    try:
+        if method.upper() == "POST":
+            response = requests.post(url, data=params, headers=headers, timeout=timeout)
+        else:
+            response = requests.get(url, params=params, headers=headers, timeout=timeout)
+        return response
+    except requests.RequestException as e:
+        print(f"[-] Request failed: {e}")
+        return None
