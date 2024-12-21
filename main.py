@@ -58,16 +58,6 @@ def update_tool(logger):
 
 
 def test_payloads(endpoint, payloads, logger):
-    """
-    Tests payloads against a specific endpoint.
-
-    Args:
-        endpoint (dict): Endpoint to test, including URL and parameters.
-        payloads (list): List of payloads to inject.
-
-    Returns:
-        list: List of successful injection results.
-    """
     results = []
     params = endpoint.get('params', {})  # Ensure params is always a dictionary
 
@@ -85,7 +75,7 @@ def test_payloads(endpoint, payloads, logger):
 
 def main():
     print_banner()
-    logger = setup_logger()  # Initialize logger
+    logger = setup_logger()
     args = get_arguments()
 
     if args.update:
@@ -115,8 +105,12 @@ def main():
     results = []
     for endpoint in crawled_data:
         logger.info(f"Testing endpoint: {endpoint['url']}")
-        html_contexts = analyze_target(endpoint.get('response', ''))
-        for context, details in html_contexts.items():
+        
+        # Ensure 'response' is passed correctly
+        response_text = endpoint.get('response', '')  # Get raw response text
+        html_contexts = analyze_target(response_text)  # Pass raw text to analyze_target
+        
+        for context, details in html_contexts.get('html_contexts', {}).items():
             payloads = generate_payloads(context, details)
             results.extend(test_payloads(endpoint, payloads, logger))
 
