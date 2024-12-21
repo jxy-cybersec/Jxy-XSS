@@ -1,13 +1,13 @@
 import argparse
 import subprocess
-from modules.utils import setup_logger, save_results
+from modules.utils import setup_logger, save_results, requester
 from modules.payloads import load_payloads_for_waf, generate_payloads
 from modules.target_analysis import analyze_target
 from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
 from modules.crawler import crawl
-
+from modules.htmlParser import htmlParser
 
 
 def print_banner():
@@ -61,7 +61,7 @@ def update_tool():
 def test_payloads(endpoint, payloads):
     results = []
     for payload in payloads:
-        response = inject_payload(endpoint['url'], endpoint['params'], payload)
+        response = inject_payload(endpoint['url'], endpoint['inputs'], payload)
         if analyze_response(response, payload):
             results.append({
                 "url": endpoint['url'],
@@ -99,10 +99,12 @@ def main():
 
     for endpoint in crawled_data:
         logger.info(f"Testing endpoint: {endpoint['url']}")
-        html_contexts = htmlParser(endpoint['response'])
-        for context, details in html_contexts.items():
-            payloads = generate_payloads(context, details)
-            results.extend(test_payloads(endpoint, payloads))
+        response = requester(endpoint['url'])
+        if response:
+            html_contexts = htmlParser(response.text)
+            for context, details in html_contexts.items():
+                payloads = generate_payloads(context, details)
+                results.extend(test_payloads(endpoint, payloads))
 
     if args.output:
         save_results(args.output, results)

@@ -61,7 +61,7 @@ def handle_anchor(base_url, relative_url):
     return urljoin(base_url, relative_url)
 
 
-def requester(url, params=None, headers=None, method="GET", timeout=10):
+def requester(url, params=None, headers=None, method="GET", data=None, timeout=10):
     """
     Makes an HTTP request to the given URL.
 
@@ -70,6 +70,7 @@ def requester(url, params=None, headers=None, method="GET", timeout=10):
         params (dict, optional): Query or form parameters.
         headers (dict, optional): HTTP headers.
         method (str): HTTP method (GET or POST).
+        data (dict, optional): POST data.
         timeout (int): Timeout for the request.
 
     Returns:
@@ -77,7 +78,7 @@ def requester(url, params=None, headers=None, method="GET", timeout=10):
     """
     try:
         if method.upper() == "POST":
-            return requests.post(url, data=params, headers=headers, timeout=timeout)
+            return requests.post(url, data=data, headers=headers, timeout=timeout)
         return requests.get(url, params=params, headers=headers, timeout=timeout)
     except Exception as e:
         print(f"[-] Error making request to {url}: {e}")
