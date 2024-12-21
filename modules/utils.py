@@ -2,6 +2,8 @@ import json
 import logging
 import re
 import requests
+from urllib.parse import urljoin, urlparse
+
 
 def setup_logger(log_file="tool.log", log_level=logging.INFO):
     """
@@ -26,6 +28,7 @@ def setup_logger(log_file="tool.log", log_level=logging.INFO):
 
     return logger
 
+
 def save_results(output_file, results):
     """
     Saves the scan results to a file in JSON format.
@@ -41,23 +44,22 @@ def save_results(output_file, results):
     except Exception as e:
         print(f"[-] Error saving results to {output_file}: {e}")
 
-def replaceValue(mapping, key, new_value, strategy=None):
+
+def handle_anchor(base_url, relative_url):
     """
-    Replace a specific key's value in a dictionary.
+    Resolves relative or partial URLs into absolute URLs.
 
     Args:
-        mapping (dict): The dictionary to modify.
-        key (str): Key whose value should be replaced.
-        new_value (str): The new value.
-        strategy (function, optional): Function for copying (e.g., `copy.deepcopy`).
+        base_url (str): The base URL (e.g., the page being crawled).
+        relative_url (str): The relative or incomplete URL.
 
     Returns:
-        dict: Updated dictionary.
+        str: The resolved absolute URL.
     """
-    another_map = strategy(mapping) if strategy else mapping
-    if key in another_map:
-        another_map[key] = new_value
-    return another_map
+    if not relative_url:
+        return base_url
+    return urljoin(base_url, relative_url)
+
 
 def requester(url, params=None, headers=None, method="GET", timeout=10):
     """
@@ -80,6 +82,26 @@ def requester(url, params=None, headers=None, method="GET", timeout=10):
     except Exception as e:
         print(f"[-] Error making request to {url}: {e}")
         return None
+
+
+def replaceValue(mapping, key, new_value, strategy=None):
+    """
+    Replace a specific key's value in a dictionary.
+
+    Args:
+        mapping (dict): The dictionary to modify.
+        key (str): Key whose value should be replaced.
+        new_value (str): The new value.
+        strategy (function, optional): Function for copying (e.g., `copy.deepcopy`).
+
+    Returns:
+        dict: Updated dictionary.
+    """
+    another_map = strategy(mapping) if strategy else mapping
+    if key in another_map:
+        another_map[key] = new_value
+    return another_map
+
 
 def escaped(position, string):
     """

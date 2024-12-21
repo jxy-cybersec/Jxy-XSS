@@ -2,6 +2,7 @@ from modules.zetanize import zetanize
 from modules.utils import handle_anchor, requester
 from modules.colors import green, red, end
 
+
 def crawl(url, headers=None):
     """
     Crawls the target for forms and injection points.
@@ -15,9 +16,13 @@ def crawl(url, headers=None):
     """
     if headers is None:
         headers = {}
-    
+
     try:
         response = requester(url, headers=headers)
+        if not response or not response.text:
+            print(f"{red}[-] Unable to fetch content from {url}.{end}")
+            return []
+
         forms = zetanize(response.text)
         endpoints = []
 
@@ -28,6 +33,7 @@ def crawl(url, headers=None):
                 "method": form["method"],
                 "inputs": form["inputs"]
             })
+
         print(f"{green}[+] Found {len(endpoints)} endpoints during crawling.{end}")
         return endpoints
     except Exception as e:
