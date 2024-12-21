@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import requests
+from urllib.parse import urlparse, urljoin
 
 # Default headers for HTTP requests
 default_headers = {
@@ -109,3 +110,18 @@ def requester(url, params=None, headers=None, method="GET", timeout=10):
     except requests.RequestException as e:
         print(f"[-] Request failed: {e}")
         return None
+
+def handle_anchor(parent_url, url):
+    """
+    Handles relative and absolute URLs for anchors or forms.
+
+    Args:
+        parent_url (str): The base URL of the page.
+        url (str): The URL to process (may be relative or absolute).
+
+    Returns:
+        str: The absolute URL.
+    """
+    if url.startswith("http://") or url.startswith("https://"):
+        return url  # Already absolute
+    return urljoin(parent_url, url)
