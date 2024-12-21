@@ -1,75 +1,94 @@
 import argparse
-import subprocess
-from modules.utils import setup_logger, save_results, default_headers
+import time
+from modules.utils import setup_logger, save_results
 from modules.payloads import load_payloads_for_waf
-from modules.target_analysis import analyze_target
-from modules.injector import inject_payload
-from modules.response_analysis import analyze_response
-from modules.waf_detection import detect_waf
 from modules.crawler import crawl
+from modules.injector import inject_payload
+from modules.waf_detection import detect_waf
+
+logger = setup_logger()
 
 def print_banner():
     banner = r"""
-     ▄█ ▀████    ▐████▀ ▄██   ▄   ▀████    ▐████▀    ▄████████    ▄████████ 
-    ███   ███▌   ████▀  ███   ██▄   ███▌   ████▀    ███    ███   ███    ███ 
-    ███    ███  ▐███    ███▄▄▄███    ███  ▐███      ███    █▀    ███    █▀  
-    ███    ▀███▄███▀    ▀▀▀▀▀▀███    ▀███▄███▀      ███          ███        
-    ███    ████▀██▄     ▄██   ███    ████▀██▄     ▀███████████ ▀███████████ 
-    ███   ▐███  ▀███    ███   ███   ▐███  ▀███             ███          ███ 
-    ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███ 
-█▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀  
-▀▀▀▀▀▀                                                                      
+     ▄█ ▀████    ▐████▀ ▄██   ▄   ▀████    ▐████▀    ▄████████    ▄████████
+    ███   ███▌   ████▀  ███   ██▄   ███▌   ████▀    ███    ███   ███    ███
+    ███    ███  ▐███    ███▄▄▄███    ███  ▐███      ███    █▀    ███    █▀
+    ███    ▀███▄███▀    ▀▀▀▀▀▀███    ▀███▄███▀      ███          ███
+    ███    ████▀██▄     ▄██   ███    ████▀██▄     ▀███████████ ▀███████████
+    ███   ▐███  ▀███    ███   ███   ▐███  ▀███             ███          ███
+    ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███
+█▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀
+▀▀▀▀▀▀
+
+
+                # Author: JxyCyberSec
     """
-    author = "\n                # Author: JxyCyberSec\n"
     print(f"\033[94m{banner}\033[0m")
-    print(f"\033[93m{author}\033[0m")
-
-
-def get_arguments():
-    parser = argparse.ArgumentParser(
-        description="JXY-XSS - Automated XSS Vulnerability Scanner",
-        epilog="Example usage: python main.py -u https://target.com -o results.json"
-    )
-    parser.add_argument("-u", "--url", help="Target URL to scan")
-    parser.add_argument("-o", "--output", help="Path to save the scan results")
-    parser.add_argument("-up", "--update", action="store_true", help="Update the tool to the latest version from GitHub")
-    return parser.parse_args()
 
 
 def main():
-    print_banner()
-    args = get_arguments()
-    logger = setup_logger()
+    # Argument parser
+    parser = argparse.ArgumentParser(description="XSS Scanner Tool")
+    parser.add_argument("-u", "--url", required=True, help="Target URL to scan")
+    parser.add_argument("-o", "--output", help="File to save results (JSON format)")
+    args = parser.parse_args()
 
-    if not args.url:
-        logger.error("Please provide a target URL with -u or --url")
-        return
+    # Banner
+    print_banner()
 
     url = args.url
-    headers = default_headers  # Use default headers from utils
     output_file = args.output
 
     logger.info(f"Starting scan for: {url}")
 
-    waf_name = detect_waf(url, headers=headers)
+    # WAF Detection
+    waf_name = detect_waf(url, headers={})
     if waf_name:
-        logger.info(f"Detected WAF: {waf_name}")
+        logger.info(f"WAF detected: {waf_name}")
     else:
-        logger.info("No WAF detected. Proceeding with default payloads.")
+        logger.info("No WAF detected.")
 
-    payloads = load_payloads_for_waf(waf_name, base_path="payloads/")
-    crawled_data = crawl(url, headers)  # Pass headers to the crawl function
-    results = []
+    # Load Payloads
+    payloads = load_payloads_for_waf()
+    logger.info(f"Loaded {len(payloads)} payloads for testing.")
 
+    # Crawling the target
+    crawled_data = crawl(url, headers={})
+    logger.info(f"Found {len(crawled_data)} endpoints during crawling.")
+
+    # Initialize results
+    vulnerabilities = []
+
+    # Testing each endpoint
     for endpoint in crawled_data:
-        logger.info(f"Testing endpoint: {endpoint['url']}")
-        response_text = endpoint.get("response", "")
-        analysis_result = analyze_target(response_text)
-        results.append(analysis_result)
+        endpoint_url = endpoint.get('url', None)
+        params = endpoint.get('params', {})
 
-    if output_file:
-        save_results(output_file, results)
-        logger.info(f"Results saved to: {output_file}")
+        if not endpoint_url:
+            logger.warning(f"Skipping an endpoint without a valid URL: {endpoint}")
+            continue
+
+        logger.info(f"Testing endpoint: {endpoint_url}")
+        for payload in payloads:
+            try:
+                response = inject_payload(endpoint_url, params, payload, headers={})
+                if response:
+                    logger.info(f"[+] Reflection detected with payload: {payload}")
+                    vulnerabilities.append({"url": endpoint_url, "payload": payload})
+
+                # Enforce rate limit of 10 payloads/sec
+                time.sleep(0.1)
+            except Exception as e:
+                logger.error(f"[-] Error during injection with payload {payload}: {e}")
+
+    # Save results
+    if vulnerabilities:
+        logger.info(f"[+] Found {len(vulnerabilities)} vulnerabilities.")
+        if output_file:
+            save_results(output_file, vulnerabilities)
+            logger.info(f"Results saved to: {output_file}")
+    else:
+        logger.info("[-] No vulnerabilities found.")
 
     logger.info("Scan complete.")
 
