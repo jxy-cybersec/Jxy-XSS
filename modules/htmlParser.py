@@ -4,6 +4,12 @@ from modules.utils import escaped
 def htmlParser(response):
     """
     Parses HTML for potential injection points.
+
+    Args:
+        response (str): HTML response as a string.
+
+    Returns:
+        dict: Contexts with potential injection points.
     """
     xsschecker = "xsscheck"
     contexts = {}

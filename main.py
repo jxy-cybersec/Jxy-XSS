@@ -1,15 +1,13 @@
 import argparse
 import subprocess
 from modules.utils import setup_logger, save_results
-from modules.payloads import load_payloads_for_waf
+from modules.payloads import load_payloads_for_waf, generate_payloads
 from modules.target_analysis import analyze_target
 from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
 from modules.crawler import crawl
-from modules.payloads import generate_payloads
 from modules.htmlParser import htmlParser
-from modules.utils import setup_logger, save_results
 
 
 def print_banner():
@@ -59,10 +57,8 @@ def update_tool():
     except Exception as e:
         logger.error(f"An error occurred while updating: {e}")
 
+
 def test_payloads(endpoint, payloads):
-    """
-    Tests payloads against a specific endpoint.
-    """
     results = []
     for payload in payloads:
         response = inject_payload(endpoint['url'], endpoint['params'], payload)
@@ -72,6 +68,7 @@ def test_payloads(endpoint, payloads):
                 "payload": payload
             })
     return results
+
 
 def main():
     print_banner()

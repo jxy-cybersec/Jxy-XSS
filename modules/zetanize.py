@@ -3,6 +3,12 @@ import re
 def zetanize(response):
     """
     Extracts forms and input fields from the HTML response.
+
+    Args:
+        response (str): HTML response as a string.
+
+    Returns:
+        dict: Extracted forms and their inputs.
     """
     forms = {}
     form_matches = re.findall(r'(?i)(?s)<form.*?>.*?</form>', response)
