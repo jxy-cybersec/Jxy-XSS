@@ -7,7 +7,7 @@ from modules.injector import inject_payload
 from modules.response_analysis import analyze_response
 from modules.waf_detection import detect_waf
 from modules.crawler import crawl
-from modules.htmlParser import htmlParser
+
 
 
 def print_banner():
