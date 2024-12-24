@@ -1,18 +1,35 @@
-from modules.zetanize import zetanize
-from modules.utils import requester
+import requests
+from bs4 import BeautifulSoup
 
-def crawl(url, headers):
+def crawl(url):
     """
-    Crawls the target for forms and injection points.
+    Crawls the target URL to extract endpoints.
+    Args:
+        url (str): Target URL to crawl.
+    Returns:
+        list: A list of dictionaries containing endpoint information.
     """
-    response = requester(url, headers=headers)
-    forms = zetanize(response.text)
-    endpoints = []
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        forms = soup.find_all("form")
+        endpoints = []
 
-    for form_id, form in forms.items():
-        endpoints.append({
-            "url": url,
-            "method": form["method"],
-            "inputs": form["inputs"]
-        })
-    return endpoints
+        for form in forms:
+            action = form.get("action", "")
+            method = form.get("method", "get").lower()
+            inputs = form.find_all("input")
+            params = {}
+
+            for inp in inputs:
+                name = inp.get("name")
+                if name:
+                    params[name] = ""
+
+            full_url = action if action.startswith("http") else url + action
+            endpoints.append({"url": full_url, "params": params, "method": method})
+
+        return endpoints
+    except Exception as e:
+        print(f"[-] Error during crawling: {e}")
+        return []

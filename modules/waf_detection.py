@@ -1,9 +1,6 @@
 import json
 import re
-from modules.utils import requester, setup_logger
-
-logger = setup_logger()
-
+from modules.utils import requester
 
 def detect_waf(url, headers, payload="<script>alert(1)</script>"):
     """
@@ -14,22 +11,15 @@ def detect_waf(url, headers, payload="<script>alert(1)</script>"):
         with open("db/wafSignatures.json") as f:
             waf_signatures = json.load(f)
 
-        logger.info("Checking for WAF...")
-        response = requester(url, data={"xss": payload}, headers=headers, method="POST")
-        if not response:
-            logger.error("Failed to get a response from the server.")
-            return None
-
+        print("[*] Checking for WAF...")
+        response = requester(url, params={"xss": payload}, headers=headers)
+        
         for waf_name, signatures in waf_signatures.items():
             if re.search(signatures["page"], response.text, re.I):
-                logger.info(f"WAF detected: {waf_name}")
+                print(f"[+] WAF detected: {waf_name}")
                 return waf_name
-
-        logger.info("No WAF detected.")
-        return None
-    except FileNotFoundError:
-        logger.error("WAF signature database not found. Skipping WAF detection.")
-        return None
+        
+        print("[-] No WAF detected.")
     except Exception as e:
-        logger.error(f"Error during WAF detection: {e}")
-        return None
+        print(f"[-] Error during WAF detection: {e}")
+    return None

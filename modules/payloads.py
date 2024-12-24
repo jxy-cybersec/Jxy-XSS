@@ -1,14 +1,16 @@
 import os
 
-def load_payloads_for_waf(waf_name=None, base_path="payloads/"):
+def load_payloads(payload_type):
     """
-    Load WAF-specific or default payloads from the given directory.
+    Load payloads of the given type from the appropriate file.
     """
-    payload_file = f"{base_path}/payloads_default.txt"
-    if waf_name:
-        specific_file = f"{base_path}/payloads_{waf_name.lower()}.txt"
-        if os.path.exists(specific_file):
-            payload_file = specific_file
+    payload_file = f"payloads/payloads_{payload_type}.txt"
+    if not os.path.exists(payload_file):
+        raise FileNotFoundError(f"Payload file '{payload_file}' not found.")
 
-    with open(payload_file, "r", encoding="utf-8") as file:
-        return [line.strip() for line in file if line.strip()]
+    try:
+        with open(payload_file, "r", encoding="utf-8") as file:
+            return [line.strip() for line in file if line.strip()]
+    except UnicodeDecodeError as e:
+        print(f"[-] Error reading {payload_file}: {e}")
+        return []

@@ -1,12 +1,9 @@
 import argparse
 import time
-from modules.utils import setup_logger, save_results
-from modules.payloads import load_payloads_for_waf
+from modules.utils import setup_logger
+from modules.payloads import load_payloads
 from modules.crawler import crawl
 from modules.injector import inject_payload
-from modules.waf_detection import detect_waf
-
-logger = setup_logger()
 
 def print_banner():
     banner = r"""
@@ -19,79 +16,53 @@ def print_banner():
     ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███
 █▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀
 ▀▀▀▀▀▀
-
-
-                # Author: JxyCyberSec
     """
-    print(f"\033[94m{banner}\033[0m")
+    print(banner)
+    print("\n                # Author: JxyCyberSec\n")
 
+def get_arguments():
+    parser = argparse.ArgumentParser(
+        description="JXY-XSS - Advanced XSS Scanner with Payload Mutation",
+        epilog="Example: python main.py -u https://target.com -o results.json"
+    )
+    parser.add_argument("-u", "--url", help="Target URL to scan", required=True)
+    parser.add_argument("-o", "--output", help="Path to save the scan results", default="results.json")
+    parser.add_argument("-t", "--type", help="Type of payloads to use (default, js)", default="default")
+    return parser.parse_args()
 
 def main():
-    # Argument parser
-    parser = argparse.ArgumentParser(description="XSS Scanner Tool")
-    parser.add_argument("-u", "--url", required=True, help="Target URL to scan")
-    parser.add_argument("-o", "--output", help="File to save results (JSON format)")
-    args = parser.parse_args()
-
-    # Banner
     print_banner()
+    args = get_arguments()
+    logger = setup_logger()
 
     url = args.url
     output_file = args.output
+    payload_type = args.type
 
     logger.info(f"Starting scan for: {url}")
 
-    # WAF Detection
-    waf_name = detect_waf(url, headers={})
-    if waf_name:
-        logger.info(f"WAF detected: {waf_name}")
-    else:
-        logger.info("No WAF detected.")
-
-    # Load Payloads
-    payloads = load_payloads_for_waf()
+    # Load payloads
+    payloads = load_payloads(payload_type)
+    if not payloads:
+        logger.error("No payloads loaded. Please check your payload files.")
+        return
     logger.info(f"Loaded {len(payloads)} payloads for testing.")
 
-    # Crawling the target
-    crawled_data = crawl(url, headers={})
+    # Crawl the target
+    crawled_data = crawl(url)
+    if not crawled_data:
+        logger.error("No endpoints found during crawling.")
+        return
     logger.info(f"Found {len(crawled_data)} endpoints during crawling.")
 
-    # Initialize results
-    vulnerabilities = []
-
-    # Testing each endpoint
+    # Perform injections
     for endpoint in crawled_data:
-        endpoint_url = endpoint.get('url', None)
-        params = endpoint.get('params', {})
-
-        if not endpoint_url:
-            logger.warning(f"Skipping an endpoint without a valid URL: {endpoint}")
-            continue
-
-        logger.info(f"Testing endpoint: {endpoint_url}")
+        logger.info(f"Testing endpoint: {endpoint['url']}")
         for payload in payloads:
-            try:
-                response = inject_payload(endpoint_url, params, payload, headers={})
-                if response:
-                    logger.info(f"[+] Reflection detected with payload: {payload}")
-                    vulnerabilities.append({"url": endpoint_url, "payload": payload})
-
-                # Enforce rate limit of 10 payloads/sec
-                time.sleep(0.1)
-            except Exception as e:
-                logger.error(f"[-] Error during injection with payload {payload}: {e}")
-
-    # Save results
-    if vulnerabilities:
-        logger.info(f"[+] Found {len(vulnerabilities)} vulnerabilities.")
-        if output_file:
-            save_results(output_file, vulnerabilities)
-            logger.info(f"Results saved to: {output_file}")
-    else:
-        logger.info("[-] No vulnerabilities found.")
+            if inject_payload(endpoint['url'], endpoint['params'], payload, headers={}):
+                logger.info(f"[+] Found vulnerable payload: {payload}")
 
     logger.info("Scan complete.")
-
 
 if __name__ == "__main__":
     main()

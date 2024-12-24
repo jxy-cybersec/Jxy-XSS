@@ -1,7 +1,6 @@
-import json
 import logging
+import time
 import requests
-
 
 def setup_logger(log_file="tool.log", log_level=logging.INFO):
     """
@@ -10,60 +9,54 @@ def setup_logger(log_file="tool.log", log_level=logging.INFO):
     logger = logging.getLogger("JXY-XSS")
     logger.setLevel(log_level)
 
-    if not logger.hasHandlers():
-        formatter = logging.Formatter(
-            "%(asctime)s [%(name)s] [%(levelname)s]: %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
+    formatter = logging.Formatter(
+        "%(asctime)s [%(name)s] [%(levelname)s]: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
     return logger
 
-
-logger = setup_logger()
-
-
-def requester(url, params=None, headers=None, data=None, method="GET", timeout=10):
+def requester(url, params=None, headers=None, method="GET", timeout=10, retries=3):
     """
-    Sends an HTTP request to the given URL.
-    Supports both GET and POST requests.
-    """
-    try:
-        if method.upper() == "GET":
-            response = requests.get(url, params=params, headers=headers, timeout=timeout)
-        elif method.upper() == "POST":
-            response = requests.post(url, data=data, headers=headers, timeout=timeout)
-        else:
-            logger.error(f"Unsupported HTTP method: {method}")
-            return None
-        response.raise_for_status()
-        return response
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request failed: {e}")
-        return None
-
-
-def save_results(output_file, results):
-    """
-    Saves the scan results to a file in JSON format.
+    Sends an HTTP request with retry logic.
 
     Args:
-        output_file (str): Path to the output file.
-        results (list): List of dictionaries containing scan results.
+        url (str): Target URL.
+        params (dict): Parameters to send in the query string.
+        headers (dict): HTTP headers.
+        method (str): HTTP method (GET or POST).
+        timeout (int): Timeout for requests in seconds.
+        retries (int): Number of retries for failed requests.
 
     Returns:
-        None
+        Response: HTTP response object or None if all retries fail.
     """
-    try:
-        with open(output_file, "w") as file:
-            json.dump(results, file, indent=4)
-        logger.info(f"Results saved to: {output_file}")
-    except Exception as e:
-        logger.error(f"Error saving results to {output_file}: {e}")
+    for attempt in range(retries):
+        try:
+            if method == "GET":
+                response = requests.get(url, params=params, headers=headers, timeout=timeout)
+            elif method == "POST":
+                response = requests.post(url, data=params, headers=headers, timeout=timeout)
+            else:
+                raise ValueError("Unsupported HTTP method.")
+            
+            # Return response if status code is 200
+            if response.status_code == 200:
+                return response
+            else:
+                print(f"[-] Received HTTP {response.status_code} for {url}")
+        except requests.exceptions.RequestException as e:
+            print(f"[-] Error during request to {url}: {e}")
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                print("[-] Max retries exceeded.")
+    return None

