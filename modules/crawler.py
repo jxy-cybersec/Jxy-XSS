@@ -1,50 +1,42 @@
-import requests
 import logging
-import subprocess
+import requests
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger("JXY-XSS")
 
-def requester(url, params=None, headers=None, method="GET", timeout=10):
+def crawl(url, depth=1):
     """
-    Sends an HTTP request.
+    Crawls a URL to find endpoints with parameters.
+
+    Args:
+        url (str): The target URL to crawl.
+        depth (int): The depth of crawling (default is 1).
+
+    Returns:
+        list: A list of discovered endpoints with their parameters.
     """
-    headers = headers or {}
+    logger.info(f"[*] Crawling: {url} (Depth: {depth})")
+    discovered_endpoints = []
+
     try:
-        if method.upper() == "GET":
-            response = requests.get(url, params=params, headers=headers, timeout=timeout)
-        elif method.upper() == "POST":
-            response = requests.post(url, data=params, headers=headers, timeout=timeout)
-        else:
-            logger.error(f"[-] Unsupported HTTP method: {method}")
-            return None
-        logger.info(f"[+] Received response with status code: {response.status_code}")
-        return response
-    except requests.exceptions.RequestException as e:
-        logger.error(f"[-] Request error: {e}")
-        return None
+        response = requests.get(url, timeout=10)
+        if response.status_code != 200:
+            logger.error(f"[-] Failed to fetch {url}: HTTP {response.status_code}")
+            return discovered_endpoints
 
-def setup_logger(log_file="tool.log"):
-    """
-    Sets up the logger for the tool.
-    """
-    logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler(log_file)
-    console_handler = logging.StreamHandler()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    formatter = logging.Formatter('%(asctime)s [%(name)s] [%(levelname)s]: %(message)s')
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
+        # Extract links
+        links = soup.find_all("a", href=True)
+        for link in links:
+            href = link["href"]
+            if "?" in href:  # Check for query parameters
+                full_url = href if href.startswith("http") else requests.compat.urljoin(url, href)
+                discovered_endpoints.append({"url": full_url, "params": {}})
+                logger.info(f"[+] Found endpoint: {full_url}")
 
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+        return discovered_endpoints
 
-def update_tool():
-    """
-    Updates the tool by pulling the latest changes from the repository.
-    """
-    try:
-        logger.info("[*] Updating the tool...")
-        subprocess.run(["git", "pull"], check=True)
-        logger.info("[+] Tool updated successfully!")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"[-] Failed to update the tool: {e}")
+    except requests.RequestException as e:
+        logger.error(f"[-] Error during crawling: {e}")
+        return discovered_endpoints
