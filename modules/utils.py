@@ -1,62 +1,60 @@
 import logging
+import subprocess
 import time
 import requests
 
-def setup_logger(log_file="tool.log", log_level=logging.INFO):
-    """
-    Sets up a logger to write to both the console and a log file.
-    """
+def setup_logger():
+    """Sets up a logger for the tool."""
     logger = logging.getLogger("JXY-XSS")
-    logger.setLevel(log_level)
-
-    formatter = logging.Formatter(
-        "%(asctime)s [%(name)s] [%(levelname)s]: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
+    logger.setLevel(logging.INFO)
     console_handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s [%(name)s] [%(levelname)s]: %(message)s')
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
-
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     return logger
 
-def requester(url, params=None, headers=None, method="GET", timeout=10, retries=3):
-    """
-    Sends an HTTP request with retry logic.
+def save_results(file_path, results):
+    """Saves scan results to a file."""
+    try:
+        with open(file_path, 'w') as f:
+            for result in results:
+                f.write(result + "\n")
+    except Exception as e:
+        logger = setup_logger()
+        logger.error(f"Failed to save results to {file_path}: {e}")
 
-    Args:
-        url (str): Target URL.
-        params (dict): Parameters to send in the query string.
-        headers (dict): HTTP headers.
-        method (str): HTTP method (GET or POST).
-        timeout (int): Timeout for requests in seconds.
-        retries (int): Number of retries for failed requests.
+def rate_limit(requests_per_second):
+    """Implements rate limiting for requests."""
+    delay = 1.0 / requests_per_second
+    time.sleep(delay)
 
-    Returns:
-        Response: HTTP response object or None if all retries fail.
-    """
-    for attempt in range(retries):
-        try:
-            if method == "GET":
-                response = requests.get(url, params=params, headers=headers, timeout=timeout)
-            elif method == "POST":
-                response = requests.post(url, data=params, headers=headers, timeout=timeout)
-            else:
-                raise ValueError("Unsupported HTTP method.")
-            
-            # Return response if status code is 200
-            if response.status_code == 200:
-                return response
-            else:
-                print(f"[-] Received HTTP {response.status_code} for {url}")
-        except requests.exceptions.RequestException as e:
-            print(f"[-] Error during request to {url}: {e}")
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)  # Exponential backoff
-            else:
-                print("[-] Max retries exceeded.")
-    return None
+def requester(url, method="GET", params=None, data=None, headers=None):
+    """Handles HTTP requests."""
+    try:
+        if method == "GET":
+            return requests.get(url, params=params, headers=headers, timeout=10)
+        elif method == "POST":
+            return requests.post(url, data=data, headers=headers, timeout=10)
+    except requests.exceptions.RequestException as e:
+        logger = setup_logger()
+        logger.error(f"Request error: {e}")
+        return None
+
+def update_tool(logger):
+    """Updates the tool to the latest version using Git."""
+    logger.info("Checking for updates...")
+    try:
+        result = subprocess.run(
+            ["git", "pull"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if "Already up to date." in result.stdout:
+            logger.info("The tool is already up to date.")
+        else:
+            logger.info("Tool successfully updated.")
+    except FileNotFoundError:
+        logger.error("Git is not installed. Please install Git to use the update feature.")
+    except Exception as e:
+        logger.error(f"An error occurred while updating: {e}")

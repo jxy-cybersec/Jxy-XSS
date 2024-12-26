@@ -1,9 +1,10 @@
 import argparse
-import time
-from modules.utils import setup_logger
+import subprocess
+from modules.utils import setup_logger, save_results, update_tool
 from modules.payloads import load_payloads
 from modules.crawler import crawl
 from modules.injector import inject_payload
+
 
 def print_banner():
     banner = r"""
@@ -16,53 +17,54 @@ def print_banner():
     ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███
 █▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀
 ▀▀▀▀▀▀
+    
+                # Author: JxyCyberSec
     """
     print(banner)
-    print("\n                # Author: JxyCyberSec\n")
+
 
 def get_arguments():
     parser = argparse.ArgumentParser(
-        description="JXY-XSS - Advanced XSS Scanner with Payload Mutation",
-        epilog="Example: python main.py -u https://target.com -o results.json"
+        description="JXY-XSS - Automated XSS Vulnerability Scanner",
+        epilog="Example usage: python main.py -u https://target.com -o results.json"
     )
-    parser.add_argument("-u", "--url", help="Target URL to scan", required=True)
-    parser.add_argument("-o", "--output", help="Path to save the scan results", default="results.json")
-    parser.add_argument("-t", "--type", help="Type of payloads to use (default, js)", default="default")
+    parser.add_argument("-u", "--url", help="Target URL to scan")
+    parser.add_argument("-o", "--output", help="Path to save the scan results")
+    parser.add_argument("-up", "--update", action="store_true", help="Update the tool to the latest version from GitHub")
     return parser.parse_args()
+
 
 def main():
     print_banner()
     args = get_arguments()
     logger = setup_logger()
 
-    url = args.url
-    output_file = args.output
-    payload_type = args.type
+    if args.update:
+        update_tool(logger)
+        return
 
+    if not args.url:
+        logger.error("Please provide a target URL with -u or --url")
+        return
+
+    url = args.url
+    headers = {}
     logger.info(f"Starting scan for: {url}")
 
-    # Load payloads
-    payloads = load_payloads(payload_type)
-    if not payloads:
-        logger.error("No payloads loaded. Please check your payload files.")
-        return
+    # Skip crawling if a specific URL is provided
+    endpoints = [{"url": url, "params": {}}]
+    payloads = load_payloads("default")
     logger.info(f"Loaded {len(payloads)} payloads for testing.")
 
-    # Crawl the target
-    crawled_data = crawl(url)
-    if not crawled_data:
+    if not endpoints:
         logger.error("No endpoints found during crawling.")
         return
-    logger.info(f"Found {len(crawled_data)} endpoints during crawling.")
 
-    # Perform injections
-    for endpoint in crawled_data:
+    for endpoint in endpoints:
         logger.info(f"Testing endpoint: {endpoint['url']}")
         for payload in payloads:
-            if inject_payload(endpoint['url'], endpoint['params'], payload, headers={}):
-                logger.info(f"[+] Found vulnerable payload: {payload}")
+            inject_payload(endpoint['url'], endpoint.get('params', {}), payload, headers)
 
-    logger.info("Scan complete.")
 
 if __name__ == "__main__":
     main()
