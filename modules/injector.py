@@ -1,22 +1,31 @@
+import requests
+from bs4 import BeautifulSoup
 import logging
-from modules.utils import requester
 
 logger = logging.getLogger("JXY-XSS")
 
-def inject_payload(url, params, payload, headers=None):
-    headers = headers or {}
-    logger.info(f"[*] Injecting payload: {payload}")
+def crawl(url):
+    """
+    Crawls the given URL to find links and parameters.
+
+    Args:
+        url (str): The target URL.
+
+    Returns:
+        list: A list of crawled endpoints with parameters.
+    """
+    crawled_endpoints = []
     try:
-        if params:
-            for key in params:
-                if isinstance(params[key], str):
-                    params[key] += payload
-                else:
-                    logger.error(f"[-] Cannot inject payload into non-string parameter: {key}")
-            response = requester(url, params=params, headers=headers)
-        else:
-            response = requester(url + payload, headers=headers)
-        return response
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            for link in soup.find_all("a", href=True):
+                href = link['href']
+                if href.startswith("http"):
+                    crawled_endpoints.append({"url": href, "params": {}})
+                elif href.startswith("/"):
+                    crawled_endpoints.append({"url": url.rstrip("/") + href, "params": {}})
+        return crawled_endpoints
     except Exception as e:
-        logger.error(f"[-] Error during injection with payload {payload}: {e}")
-        return None
+        logger.error(f"[-] Error during crawling: {e}")
+    return []

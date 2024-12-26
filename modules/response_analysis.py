@@ -1,13 +1,13 @@
 def analyze_response(response, payload):
     """
-    Analyzes the response to check if the payload is reflected.
+    Analyze the response to detect if the payload is reflected.
 
     Args:
-        response (Response): The HTTP response object.
-        payload (str): The payload to look for in the response.
+        response (Response): HTTP response object.
+        payload (str): The payload used for testing.
 
     Returns:
-        bool: True if the payload is reflected in the response, False otherwise.
+        bool: True if the payload is reflected, False otherwise.
     """
     if response and payload in response.text:
         return True

