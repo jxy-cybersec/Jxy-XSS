@@ -1,13 +1,12 @@
 import argparse
-import subprocess
-from modules.utils import setup_logger, save_results, update_tool
-from modules.payloads import load_payloads
+import logging
 from modules.crawler import crawl
 from modules.injector import inject_payload
+from modules.payloads import load_payloads
+from modules.utils import setup_logger
 
-
-def print_banner():
-    banner = r"""
+# Banner
+BANNER = r"""
      ▄█ ▀████    ▐████▀ ▄██   ▄   ▀████    ▐████▀    ▄████████    ▄████████
     ███   ███▌   ████▀  ███   ██▄   ███▌   ████▀    ███    ███   ███    ███
     ███    ███  ▐███    ███▄▄▄███    ███  ▐███      ███    █▀    ███    █▀
@@ -17,54 +16,66 @@ def print_banner():
     ███  ▄███     ███▄  ███   ███  ▄███     ███▄     ▄█    ███    ▄█    ███
 █▄ ▄███ ████       ███▄  ▀█████▀  ████       ███▄  ▄████████▀   ▄████████▀
 ▀▀▀▀▀▀
-    
+
                 # Author: JxyCyberSec
+"""
+
+# Setup Logger
+logger = setup_logger()
+
+def test_endpoint(url, payloads):
     """
-    print(banner)
-
-
-def get_arguments():
-    parser = argparse.ArgumentParser(
-        description="JXY-XSS - Automated XSS Vulnerability Scanner",
-        epilog="Example usage: python main.py -u https://target.com -o results.json"
-    )
-    parser.add_argument("-u", "--url", help="Target URL to scan")
-    parser.add_argument("-o", "--output", help="Path to save the scan results")
-    parser.add_argument("-up", "--update", action="store_true", help="Update the tool to the latest version from GitHub")
-    return parser.parse_args()
-
+    Function to test a specific endpoint with a list of payloads.
+    """
+    logger.info(f"Testing endpoint: {url}")
+    for payload in payloads:
+        try:
+            response = inject_payload(url, {}, payload, headers={})
+            if response and payload in response.text:
+                logger.info(f"[+] Reflection detected: {payload}")
+        except Exception as e:
+            logger.error(f"[-] Error during injection with payload {payload}: {e}")
 
 def main():
-    print_banner()
-    args = get_arguments()
-    logger = setup_logger()
+    print(BANNER)
 
-    if args.update:
-        update_tool(logger)
-        return
-
-    if not args.url:
-        logger.error("Please provide a target URL with -u or --url")
-        return
+    parser = argparse.ArgumentParser(description="Jxy-XSS - XSS Vulnerability Scanner")
+    parser.add_argument("-u", "--url", help="Target URL", required=True)
+    args = parser.parse_args()
 
     url = args.url
-    headers = {}
+
     logger.info(f"Starting scan for: {url}")
 
-    # Skip crawling if a specific URL is provided
-    endpoints = [{"url": url, "params": {}}]
-    payloads = load_payloads("default")
-    logger.info(f"Loaded {len(payloads)} payloads for testing.")
-
-    if not endpoints:
-        logger.error("No endpoints found during crawling.")
+    # Load payloads
+    try:
+        payloads = load_payloads()
+        logger.info(f"Loaded {len(payloads)} payloads for testing.")
+    except RuntimeError as e:
+        logger.error(e)
         return
 
-    for endpoint in endpoints:
-        logger.info(f"Testing endpoint: {endpoint['url']}")
-        for payload in payloads:
-            inject_payload(endpoint['url'], endpoint.get('params', {}), payload, headers)
+    # Direct endpoint testing if parameters are present in URL
+    if "?" in url:
+        logger.info(f"Testing provided endpoint directly: {url}")
+        test_endpoint(url, payloads)
+        return
 
+    # Crawling if no parameters provided
+    logger.info("Starting crawling...")
+    try:
+        crawled_endpoints = crawl(url)
+        if not crawled_endpoints:
+            logger.error("No endpoints found during crawling.")
+            return
+        logger.info(f"Found {len(crawled_endpoints)} endpoints during crawling.")
+    except Exception as e:
+        logger.error(f"Error during crawling: {e}")
+        return
+
+    # Testing crawled endpoints
+    for endpoint in crawled_endpoints:
+        test_endpoint(endpoint['url'], payloads)
 
 if __name__ == "__main__":
     main()

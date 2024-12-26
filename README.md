@@ -114,13 +114,11 @@ pip install -r requirements.txt
 ## Example Output
 ### When a WAF is Detected:
 ```
-[2024-11-21 10:30:53,335] [JXY-XSS] [INFO]: Starting scan for: https://example.com/
-[*] Detecting WAF...
-[+] Detected WAF: CloudFront
-[*] Using payloads from: payloads_cloudfront.txt
-[2024-11-21 10:30:53,335] [JXY-XSS] [INFO]: Crawling target for injection points...
-[2024-11-21 10:30:55,940] [JXY-XSS] [INFO]: Testing endpoint: https://example.com/search
+[INFO]: Starting scan for: https://example.com
+[INFO]: Detected WAF: Cloudflare
+[INFO]: Testing endpoint: https://example.com/test
 [+] Vulnerable parameter found: q with payload: <script>alert('XSS')</script>
+
 ```
 
 ### When No WAF is Detected:
