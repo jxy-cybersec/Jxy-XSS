@@ -1,28 +1,28 @@
-import os
-import logging
+from modules.mutators import generate_mutations
 
-logger = logging.getLogger("JXY-XSS")
-
-def load_payloads(directory="payloads"):
+def load_payloads(file_paths=None):
     """
-    Load payloads from files in the specified directory.
-
-    Args:
-        directory (str): Directory containing payload files.
-
-    Returns:
-        list: A list of all payloads from all files in the directory.
+    Load payloads from multiple specified files and apply mutations.
     """
-    payloads = []
-    try:
-        for filename in os.listdir(directory):
-            if filename.endswith(".txt"):
-                file_path = os.path.join(directory, filename)
-                with open(file_path, "r", encoding="utf-8") as file:
-                    file_payloads = [line.strip() for line in file if line.strip()]
-                    payloads.extend(file_payloads)
-                    logger.info(f"Loaded {len(file_payloads)} payloads from {filename}.")
-        return payloads
-    except Exception as e:
-        logger.error(f"[-] Failed to load payloads: {e}")
-        raise RuntimeError(f"Failed to load payloads: {e}")
+    if file_paths is None:
+        file_paths = [
+            "payloads/payloads_default.txt",
+            "payloads/payloads_js.txt",
+            "payloads/payloads_html.txt",
+            "payloads/payloads_attributes.txt",
+            "payloads/payloads_blind.txt",
+            "payloads/custom_payloads.txt"
+        ]
+
+    payloads = set()  # To avoid duplicates
+    for file_path in file_paths:
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                for line in file:
+                    if line.strip():
+                        mutations = generate_mutations(line.strip())
+                        payloads.update(mutations.values())
+        except Exception as e:
+            raise RuntimeError(f"Failed to load payloads from {file_path}: {e}")
+
+    return list(payloads)

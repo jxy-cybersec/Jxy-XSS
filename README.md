@@ -5,11 +5,12 @@ JXY-XSS is a Python-based tool designed to detect and exploit Cross-Site Scripti
 ---
 
 ## Features
-- Dynamic Payload Loader with Contextual Adaptation
-- Payload Mutation and Recursive Testing
-- Advanced WAF Detection and Adaptive Payload Injection
-- Accurate Reflection Validation to Minimize False Positives
-- Rate-Limiting to Avoid Blocking
+- Dynamic Payload Loader
+- Recursive Payload Testing
+- WAF Detection and Adaptive Payload Selection
+- Rate-Limited Request Handling
+- Context-Aware Injection and Reflection Analysis
+
 
 ---
 

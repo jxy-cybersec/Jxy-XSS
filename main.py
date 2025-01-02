@@ -1,11 +1,9 @@
 import argparse
-import logging
-import os
-import sys
 from modules.crawler import crawl
 from modules.injector import inject_payload
 from modules.payloads import load_payloads
-from modules.utils import setup_logger, requester, update_tool
+from modules.waf_detection import detect_waf
+from modules.utils import setup_logger
 
 # Setup Logger
 logger = setup_logger()
@@ -25,39 +23,41 @@ def banner():
                 # Author: JxyCyberSec
 """)
 
-def test_endpoint(url, payloads, rate_limit=0.1):
+
+
+def test_endpoint(url, payloads):
     """
     Function to test a specific endpoint with a list of payloads.
     """
-    import time
     logger.info(f"Testing endpoint: {url}")
-    
     for payload in payloads:
         try:
             response = inject_payload(url, {}, payload, headers={})
-            if response and payload in response.text:
-                logger.info(f"[+] Reflection detected: {payload}")
+            if response:
+                if payload in response.text:
+                    logger.info(f"[+] Reflection detected: {payload}")
+                    logger.info(f"[+] Vulnerable to payload: {payload}")
+                else:
+                    logger.debug(f"[-] No reflection for payload: {payload}")
         except Exception as e:
             logger.error(f"[-] Error during injection with payload {payload}: {e}")
-        time.sleep(rate_limit)
 
 def main():
     parser = argparse.ArgumentParser(description="Jxy-XSS - XSS Vulnerability Scanner")
-    parser.add_argument("-u", "--url", help="Target URL")
-    parser.add_argument("-up", "--update", action="store_true", help="Update the tool")
+    parser.add_argument("-u", "--url", help="Target URL", required=True)
     args = parser.parse_args()
 
-    if args.update:
-        update_tool()
-        return
-
-    if not args.url:
-        logger.error("Please provide a target URL using -u or --url")
-        return
-
     url = args.url
-    banner()
+
     logger.info(f"Starting scan for: {url}")
+
+    # WAF Detection
+    logger.info("[*] Detecting WAF...")
+    waf_name = detect_waf(url)
+    if waf_name:
+        logger.info(f"[+] Detected WAF: {waf_name}")
+    else:
+        logger.info("[!] No WAF detected. Proceeding with default payloads.")
 
     # Load payloads
     try:

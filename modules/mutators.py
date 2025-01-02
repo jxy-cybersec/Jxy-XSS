@@ -28,6 +28,13 @@ def javascript_escape(payload):
     escaped = payload.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
     return escaped
 
+def recursive_mutations(payload):
+    """
+    Generate slight variations for recursive testing.
+    """
+    variations = [payload[::-1], payload.upper(), payload.lower()]
+    return [encode_payload(var) for var in variations]
+
 def generate_mutations(payload):
     """
     Generate multiple mutations of the given payload for testing.

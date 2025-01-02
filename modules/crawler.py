@@ -1,42 +1,23 @@
-import logging
 import requests
 from bs4 import BeautifulSoup
+import logging
 
 logger = logging.getLogger("JXY-XSS")
 
-def crawl(url, depth=1):
+def crawl(url):
     """
-    Crawls a URL to find endpoints with parameters.
-
-    Args:
-        url (str): The target URL to crawl.
-        depth (int): The depth of crawling (default is 1).
-
-    Returns:
-        list: A list of discovered endpoints with their parameters.
+    Crawl the target URL to find potential injection points.
     """
-    logger.info(f"[*] Crawling: {url} (Depth: {depth})")
-    discovered_endpoints = []
-
+    endpoints = []
     try:
         response = requests.get(url, timeout=10)
-        if response.status_code != 200:
-            logger.error(f"[-] Failed to fetch {url}: HTTP {response.status_code}")
-            return discovered_endpoints
-
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        # Extract links
-        links = soup.find_all("a", href=True)
-        for link in links:
-            href = link["href"]
-            if "?" in href:  # Check for query parameters
-                full_url = href if href.startswith("http") else requests.compat.urljoin(url, href)
-                discovered_endpoints.append({"url": full_url, "params": {}})
-                logger.info(f"[+] Found endpoint: {full_url}")
-
-        return discovered_endpoints
-
-    except requests.RequestException as e:
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            for link in soup.find_all("a", href=True):
+                endpoints.append({"url": link["href"], "params": {}})
+            logger.info(f"[+] Found {len(endpoints)} endpoints during crawling.")
+        else:
+            logger.warning(f"[!] Received non-200 status code: {response.status_code}")
+    except Exception as e:
         logger.error(f"[-] Error during crawling: {e}")
-        return discovered_endpoints
+    return endpoints

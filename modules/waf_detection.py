@@ -1,32 +1,32 @@
 import requests
-import logging
-
-logger = logging.getLogger("JXY-XSS")
 
 def detect_waf(url):
     """
-    Detects if a WAF is present at the target URL.
+    Detects the presence of a Web Application Firewall (WAF).
 
     Args:
-        url (str): The target URL.
+        url (str): Target URL.
 
     Returns:
-        str: The name of the detected WAF, or None if no WAF is detected.
+        str: Name of the detected WAF, or None if no WAF is detected.
     """
     try:
         response = requests.get(url, timeout=5)
-        waf_signatures = {
-            "Cloudflare": {"headers": "cf-ray"},
-            "AWS WAF": {"headers": "aws-waf"},
-            "Imperva SecureSphere": {"headers": "x-iinfo"},
-        }
-
-        for waf_name, signature in waf_signatures.items():
-            if signature.get("headers") in response.headers:
-                logger.info(f"[+] Detected WAF: {waf_name}")
-                return waf_name
-        logger.info("[!] No WAF detected.")
+        if response.status_code in [403, 406]:
+            headers = response.headers
+            if "cloudflare" in headers.get("Server", "").lower():
+                return "Cloudflare"
+            if "akamai" in headers.get("Server", "").lower():
+                return "Akamai"
+            if "aws-waf" in headers.get("x-amzn-requestid", "").lower():
+                return "AWS WAF"
+            if "imperva" in headers.get("x-cdn", "").lower():
+                return "Imperva SecureSphere"
+            if "f5" in headers.get("Server", "").lower():
+                return "F5 BIG-IP ASM"
+            if "mod_security" in headers.get("Server", "").lower():
+                return "ModSecurity"
         return None
     except requests.RequestException as e:
-        logger.error(f"[-] WAF detection error: {e}")
+        print(f"[-] WAF detection error: {e}")
         return None

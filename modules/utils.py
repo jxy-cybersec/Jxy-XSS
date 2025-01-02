@@ -1,12 +1,43 @@
 import requests
 import logging
-import subprocess
+import time
 
 logger = logging.getLogger("JXY-XSS")
 
+def rate_limiter(max_requests_per_second):
+    """
+    Decorator to limit the rate of requests.
+    """
+    min_interval = 1 / max_requests_per_second
+
+    def decorator(func):
+        last_call = [0]
+
+        def wrapper(*args, **kwargs):
+            elapsed = time.time() - last_call[0]
+            if elapsed < min_interval:
+                time.sleep(min_interval - elapsed)
+            last_call[0] = time.time()
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+@rate_limiter(10)  # Limit to 10 requests per second
 def requester(url, params=None, headers=None, method="GET", timeout=10):
     """
     Sends an HTTP request.
+
+    Args:
+        url (str): Target URL.
+        params (dict): Query parameters for the request.
+        headers (dict): Headers for the request.
+        method (str): HTTP method (GET or POST).
+        timeout (int): Timeout for the request.
+
+    Returns:
+        Response: The HTTP response object.
     """
     headers = headers or {}
     try:
@@ -26,7 +57,11 @@ def requester(url, params=None, headers=None, method="GET", timeout=10):
 def setup_logger(log_file="tool.log"):
     """
     Sets up the logger for the tool.
+
+    Args:
+        log_file (str): File to store logs.
     """
+    logger = logging.getLogger("JXY-XSS")
     logger.setLevel(logging.INFO)
     file_handler = logging.FileHandler(log_file)
     console_handler = logging.StreamHandler()
@@ -37,14 +72,4 @@ def setup_logger(log_file="tool.log"):
 
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-
-def update_tool():
-    """
-    Updates the tool by pulling the latest changes from the repository.
-    """
-    try:
-        logger.info("[*] Updating the tool...")
-        subprocess.run(["git", "pull"], check=True)
-        logger.info("[+] Tool updated successfully!")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"[-] Failed to update the tool: {e}")
+    return logger
