@@ -1,32 +1,20 @@
 import requests
+from modules.utils import logger
+import json
 
-def detect_waf(url):
-    """
-    Detects the presence of a Web Application Firewall (WAF).
-
-    Args:
-        url (str): Target URL.
-
-    Returns:
-        str: Name of the detected WAF, or None if no WAF is detected.
-    """
+def detect_waf(url, waf_signature_file="wafSignature.json"):
+    """Detects if a WAF is present by analyzing response headers and content."""
     try:
         response = requests.get(url, timeout=5)
-        if response.status_code in [403, 406]:
-            headers = response.headers
-            if "cloudflare" in headers.get("Server", "").lower():
-                return "Cloudflare"
-            if "akamai" in headers.get("Server", "").lower():
-                return "Akamai"
-            if "aws-waf" in headers.get("x-amzn-requestid", "").lower():
-                return "AWS WAF"
-            if "imperva" in headers.get("x-cdn", "").lower():
-                return "Imperva SecureSphere"
-            if "f5" in headers.get("Server", "").lower():
-                return "F5 BIG-IP ASM"
-            if "mod_security" in headers.get("Server", "").lower():
-                return "ModSecurity"
+        with open(waf_signature_file, "r") as f:
+            waf_signatures = json.load(f)
+
+        for waf_name, signature in waf_signatures.items():
+            if signature["headers"].lower() in str(response.headers).lower():
+                logger.info(f"[+] Detected WAF: {waf_name}")
+                return waf_name
+        logger.info("[!] No WAF detected.")
         return None
-    except requests.RequestException as e:
-        print(f"[-] WAF detection error: {e}")
+    except Exception as e:
+        logger.error(f"[-] WAF detection failed: {e}")
         return None

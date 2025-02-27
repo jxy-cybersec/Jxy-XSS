@@ -1,28 +1,25 @@
+import os
 from modules.mutators import generate_mutations
+from modules.utils import logger
 
-def load_payloads(file_paths=None):
-    """
-    Load payloads from multiple specified files and apply mutations.
-    """
-    if file_paths is None:
-        file_paths = [
-            "payloads/payloads_default.txt",
-            "payloads/payloads_js.txt",
-            "payloads/payloads_html.txt",
-            "payloads/payloads_attributes.txt",
-            "payloads/payloads_blind.txt",
-            "payloads/custom_payloads.txt"
-        ]
+def load_payloads(payload_dir="payloads"):
+    """Load all payloads from files in the payloads directory."""
+    payloads = []
+    try:
+        for file in os.listdir(payload_dir):
+            file_path = os.path.join(payload_dir, file)
+            with open(file_path, "r", encoding="utf-8") as f:
+                file_payloads = [line.strip() for line in f if line.strip()]
+                logger.info(f"[+] Loaded {len(file_payloads)} payloads from {file}.")
+                payloads.extend(file_payloads)
 
-    payloads = set()  # To avoid duplicates
-    for file_path in file_paths:
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                for line in file:
-                    if line.strip():
-                        mutations = generate_mutations(line.strip())
-                        payloads.update(mutations.values())
-        except Exception as e:
-            raise RuntimeError(f"Failed to load payloads from {file_path}: {e}")
-
-    return list(payloads)
+        # Add mutations to payloads
+        mutated_payloads = []
+        for payload in payloads:
+            mutations = generate_mutations(payload)
+            mutated_payloads.extend(mutations.values())
+        logger.info(f"[+] Total payloads including mutations: {len(mutated_payloads)}.")
+        return mutated_payloads
+    except Exception as e:
+        logger.error(f"[-] Error loading payloads: {e}")
+        return []
