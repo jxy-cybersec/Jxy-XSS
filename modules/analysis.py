@@ -1,19 +1,20 @@
 def validate_response(response, payload):
     """
-    Validates if the injected payload reflects or executes in the response.
-
+    Checks if the injected payload executes or reflects properly.
+    
     Args:
-        response (Response): The HTTP response object.
-        payload (str): The injected payload.
+        response (Response): The HTTP response.
+        payload (str): The payload tested.
 
     Returns:
-        bool: True if the payload reflects or executes, False otherwise.
+        dict: Contains execution status and vulnerability type.
     """
+    result = {"vulnerable": False, "type": None}
+
+    # Check if payload reflects in response (Reflected XSS)
     if payload in response.text:
-        return True
-
-    # Check if the payload is stored in headers
-    if any(payload in value for value in response.headers.values()):
-        return True
-
-    return False
+        result["vulnerable"] = True
+        result["type"] = "Reflected XSS"
+    
+    # Add more checks if needed
+    return result
