@@ -40,9 +40,29 @@ def scan_url(url):
     for payload in payloads:
         inject_payload(url, {}, payload)
 
+def scan_file(file_path):
+    """Scan multiple URLs from a file."""
+    try:
+        with open(file_path, "r") as file:
+            urls = [line.strip() for line in file if line.strip()]
+
+        if not urls:
+            logger.error(colored("⚠️ No URLs found in file!", "red"))
+            return
+        
+        logger.info(colored(f"📄 Scanning {len(urls)} URLs from file: {file_path}", "cyan"))
+        for url in urls:
+            scan_url(url)
+
+    except FileNotFoundError:
+        logger.error(colored(f"❌ File not found: {file_path}", "red"))
+    except Exception as e:
+        logger.error(colored(f"❌ Error reading file: {e}", "red"))
+
 def main():
     parser = argparse.ArgumentParser(description="JXY-XSS - XSS Scanner")
     parser.add_argument("-u", "--url", help="Target URL")
+    parser.add_argument("-uf", "--url-file", help="File containing list of URLs")
     parser.add_argument("--update", action="store_true", help="Update tool")
 
     args = parser.parse_args()
@@ -51,10 +71,12 @@ def main():
         update_tool()
         return
 
-    if args.url:
+    if args.url_file:
+        scan_file(args.url_file)
+    elif args.url:
         scan_url(args.url)
     else:
-        logger.error(colored("⚠️ Please provide a URL!", "red"))
+        logger.error(colored("⚠️ Please provide a URL or file!", "red"))
 
 if __name__ == "__main__":
     banner()
